@@ -16,6 +16,7 @@
 ▒█░▒█ ▒█▄▄▄ ▄▀▒▀▄ ▒█▄▄▄█ ▒█░▒█ ▄█▄ ▒█░░▒█ ░▀▄▄▀ ▒█░▒█ ▒█░▒█ 
 -->
 
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -27,12 +28,16 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         
+        :root {
+            --line-height-ratio: 0.85;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
         }
 
         #ascii-output {
-            line-height: 0.85;
+            line-height: var(--line-height-ratio);
             letter-spacing: -0.5px;
             background-color: transparent; 
             will-change: contents;
@@ -70,7 +75,6 @@
 <body class="bg-gray-900 text-gray-200 flex flex-col items-center justify-center min-h-screen p-4 transition-colors duration-300">
 
     <div class="w-full max-w-7xl mx-auto flex flex-col items-center">
-        <!-- Header Section -->
         <header class="text-center mb-6">
             <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
                 Live ASCII Camera
@@ -78,16 +82,13 @@
             <p class="text-gray-400 mt-2">Transform your reality into text-based art.</p>
         </header>
 
-        <!-- Controls Section -->
         <div class="w-full max-w-3xl mb-6 p-4 bg-gray-800/50 rounded-xl backdrop-blur-lg border border-gray-700 shadow-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Left Side: Main Actions -->
                 <div class="flex flex-col gap-4">
                     <button id="start-camera" class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-all transform hover:scale-105">
                         Start Camera
                     </button>
                     <div class="grid grid-cols-2 gap-4">
-                        <!-- Renamed Radio-style Camera Toggle -->
                         <div id="camera-toggle-group" class="flex items-center bg-gray-700 rounded-lg p-1">
                             <button id="front-camera-btn" class="flex-1 py-1.5 px-2 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-all" title="Normal Camera">
                                 <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -109,19 +110,24 @@
                         </button>
                     </div>
                 </div>
-                <!-- Right Side: Settings -->
                 <div class="flex flex-col gap-4">
                     <div class="flex justify-between items-center">
                          <label for="resolution-slider" class="font-medium text-gray-300">Preview Detail:</label>
-                         <span id="resolution-value" class="text-sm font-mono bg-gray-700 px-2 py-1 rounded">125</span>
+                         <span id="resolution-value" class="text-sm font-mono bg-gray-700 px-2 py-1 rounded">200</span>
                     </div>
-                    <input type="range" id="resolution-slider" min="50" max="125" value="125" class="w-full">
+                    <input type="range" id="resolution-slider" min="90" max="300" value="200" class="w-full">
+                    
+                    <div class="flex justify-between items-center">
+                         <label for="line-spacing-slider" class="font-medium text-gray-300">Line Spacing:</label>
+                         <span id="line-spacing-value" class="text-sm font-mono bg-gray-700 px-2 py-1 rounded">0.85</span>
+                    </div>
+                    <input type="range" id="line-spacing-slider" min="0.5" max="1.5" step="0.05" value="0.85" class="w-full">
+
                     <div class="flex justify-between items-center">
                         <label for="color-picker" class="font-medium text-gray-300">Text Color:</label>
                         <input type="color" id="color-picker" value="#34D399" class="w-10 h-10 rounded-md border-2 border-gray-600 cursor-pointer">
                     </div>
-                     <!-- Timer Selection Dropdown -->
-                    <div class="flex justify-between items-center">
+                     <div class="flex justify-between items-center">
                         <label for="timer-select" class="font-medium text-gray-300">Capture Timer:</label>
                         <select id="timer-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-auto p-2">
                             <option value="0">Off</option>
@@ -137,14 +143,11 @@
             </div>
         </div>
 
-        <!-- ASCII Output Area -->
         <div id="output-container" class="relative w-full bg-black p-2 rounded-xl shadow-2xl border border-gray-700 overflow-hidden flex items-center justify-center min-h-[65vh] transition-colors">
              <pre id="ascii-output" class="w-full text-center font-mono" style="color: #34D399;">
                 <span id="placeholder" class="text-gray-500 text-lg" style="font-size: 1rem;">open your cam first oke?</span>
             </pre>
-            <!-- Countdown Overlay -->
             <div id="countdown-overlay" class="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-9xl font-bold hidden z-10"></div>
-            <!-- CAPTURE BUTTON OVERLAY -->
             <button id="capture-image" title="Capture Image" class="absolute bottom-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 text-white rounded-full hover:bg-black/75 backdrop-blur-sm transition-all transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50 hidden">
                 <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
@@ -156,7 +159,6 @@
         <p id="message" class="mt-4 text-gray-400"></p>
     </div>
 
-    <!-- Hidden elements -->
     <video id="video" playsinline class="hidden"></video>
     <canvas id="canvas" class="hidden"></canvas>
     <canvas id="capture-canvas" class="hidden"></canvas>
@@ -174,6 +176,8 @@
         const captureCanvas = document.getElementById('capture-canvas');
         const resolutionSlider = document.getElementById('resolution-slider');
         const resolutionValue = document.getElementById('resolution-value');
+        const lineSpacingSlider = document.getElementById('line-spacing-slider');
+        const lineSpacingValue = document.getElementById('line-spacing-value');
         const frontCamBtn = document.getElementById('front-camera-btn');
         const backCamBtn = document.getElementById('back-camera-btn');
         const timerSelect = document.getElementById('timer-select');
@@ -226,6 +230,13 @@
         
         resolutionSlider.addEventListener('input', (e) => {
             resolutionValue.textContent = e.target.value;
+        });
+
+        // NEW: Line Spacing Listener
+        lineSpacingSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value).toFixed(2);
+            lineSpacingValue.textContent = value;
+            document.documentElement.style.setProperty('--line-height-ratio', value);
         });
 
         async function switchCamera(newMode) {
@@ -283,9 +294,11 @@
             tempContext.drawImage(video, 0, 0, hdWidth, hdHeight);
 
             // 3. Generate a new, high-detail ASCII string for the capture
-            const captureAsciiWidth = 300; 
+            //    Use the slider's value for capture resolution
+            const captureAsciiWidth = parseInt(resolutionSlider.value, 10); 
             const aspectRatio = hdHeight / hdWidth;
-            const captureAsciiHeight = Math.floor(captureAsciiWidth * aspectRatio * 0.5);
+            const asciiPixelAspect = 0.5; // ASCII characters are taller than they are wide.
+            const captureAsciiHeight = Math.floor(captureAsciiWidth * aspectRatio * asciiPixelAspect);
 
             // 4. Scale the HD image down to the target ASCII dimensions for processing brightness
             const processingCanvas = document.createElement('canvas');
@@ -315,20 +328,42 @@
             }
 
             // 5. Render this detailed ASCII string onto the final 'captureCanvas'
+            // Define the fixed, target dimensions for the output image
+            const targetWidth = 1920; 
+            const targetHeight = 1080;
+            
             const styles = window.getComputedStyle(asciiOutput);
             const bgColor = window.getComputedStyle(outputContainer).backgroundColor;
-            const fontSize = 8;
             const captureContext = captureCanvas.getContext('2d');
-            const font = `${fontSize}px ${styles.fontFamily}`;
-            
-            captureContext.font = font;
-            const charMetrics = captureContext.measureText('W');
-            const charWidth = charMetrics.width;
-            const lineHeight = fontSize * 0.85;
 
-            const asciiArtWidth = charWidth * lines[0].length;
-            const asciiArtHeight = lineHeight * lines.length;
+            // Calculate font size and line height based on target dimensions
+            const initialFontSize = 8;
+            captureContext.font = `${initialFontSize}px 'monospace'`; // Use a monospaced font for calculation
             
+            // NEW: Use the line spacing slider value for capture
+            const lineHeightRatio = parseFloat(lineSpacingSlider.value);
+            const baseLineHeight = initialFontSize * lineHeightRatio;
+
+            // Calculate the total pixel dimensions of the generated ASCII art at the base font size
+            let maxLineWidth = 0;
+            lines.forEach(line => {
+                const metrics = captureContext.measureText(line);
+                if (metrics.width > maxLineWidth) {
+                    maxLineWidth = metrics.width;
+                }
+            });
+
+            const asciiArtWidth = maxLineWidth;
+            const asciiArtHeight = baseLineHeight * lines.length;
+            
+            // Calculate the scaling factor to fit the ASCII art to the target dimensions
+            const scaleX = targetWidth / asciiArtWidth;
+            const scaleY = targetHeight / asciiArtHeight;
+            const scaleFactor = Math.min(scaleX, scaleY); // Use the smaller scale factor to fit
+            
+            const finalFontSize = initialFontSize * scaleFactor;
+            const finalLineHeight = baseLineHeight * scaleFactor;
+
             // Re-integrate watermark logic for the HD capture
             const randomMessages = [":D Art in motion.", ":) Capture the moment.", "X) Create your reality.", "XD Pixels to patterns.", ":O Digital soul.", ":P The world in code.", ":Y Seen through the matrix.", ":3 Another reality captured.", ":> Text-based masterpiece.", ":| A moment in ASCII.", ":) Smile for me!", ":9 Converting photons to text.", ":O Is this real life?", ";D Fragment of time.", ";) Beyond the pixels."];
             const randomMessage = randomMessages[Math.floor(Math.random() * randomMessages.length)];
@@ -336,14 +371,17 @@
             const dateText = date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase().replace(/, /g, '-').replace(/ /g, '-');
             const line1Left = "LIVE ASCII CAMERA", line1Right = dateText, line2Left = "By Rexshimura", line2Right = randomMessage;
             
-            const watermarkFontSize = Math.max(10, fontSize * 1.2); 
+            // Calculate watermark font size and padding based on final font size
+            const watermarkFontSize = Math.max(10, finalFontSize * 0.8); 
             const watermarkPadding = watermarkFontSize * 1.5;
             const watermarkLineHeight = watermarkFontSize * 1.2;
             const watermarkFont = `500 ${watermarkFontSize}px 'Inter', sans-serif`;
             const paddingFromEdge = 20;
             const watermarkBlockHeight = (watermarkLineHeight * 2) + (watermarkPadding * 2);
-            const canvasHeight = asciiArtHeight + watermarkBlockHeight;
-            const canvasWidth = asciiArtWidth;
+            
+            // Final canvas dimensions are now fixed
+            const canvasWidth = targetWidth;
+            const canvasHeight = targetHeight;
 
             captureCanvas.width = canvasWidth;
             captureCanvas.height = canvasHeight;
@@ -352,18 +390,27 @@
             captureContext.fillStyle = bgColor;
             captureContext.fillRect(0, 0, canvasWidth, canvasHeight);
             
-            captureContext.font = font;
+            // Draw the ASCII art scaled and centered
+            const totalAsciiHeight = lines.length * finalLineHeight;
+            const totalAsciiWidth = maxLineWidth * scaleFactor;
+            const startX = (canvasWidth - totalAsciiWidth) / 2;
+            const startY = (canvasHeight - totalAsciiHeight) / 2;
+
+            captureContext.font = `${finalFontSize}px ${styles.fontFamily}`;
             captureContext.fillStyle = styles.color;
             captureContext.textBaseline = 'top';
             
             lines.forEach((line, index) => {
                 let lineToDraw = (currentFacingMode === 'user') ? line.split('').reverse().join('') : line;
-                captureContext.fillText(lineToDraw, 0, index * lineHeight);
+                let textWidth = captureContext.measureText(lineToDraw).width;
+                let xPosition = startX + (totalAsciiWidth - textWidth) / 2; // Center each line horizontally
+                captureContext.fillText(lineToDraw, xPosition, startY + index * finalLineHeight);
             });
             
+            // Draw the watermark
             captureContext.font = watermarkFont;
             captureContext.globalAlpha = 0.7;
-            const bottomY = canvasHeight - watermarkPadding;
+            const bottomY = canvasHeight - paddingFromEdge;
 
             captureContext.textBaseline = 'bottom';
             captureContext.textAlign = 'left';
@@ -474,7 +521,8 @@
             }
 
             const aspectRatio = video.videoHeight / video.videoWidth;
-            const asciiHeight = Math.floor(asciiWidth * aspectRatio * 0.5);
+            const asciiPixelAspect = 0.5; // ASCII characters are taller than they are wide.
+            const asciiHeight = Math.floor(asciiWidth * aspectRatio * asciiPixelAspect);
 
             canvas.width = asciiWidth;
             canvas.height = asciiHeight;
@@ -502,10 +550,10 @@
             requestAnimationFrame(drawAsciiFrame);
         };
         
+        // Initialize with default slider values
+        resolutionValue.textContent = resolutionSlider.value;
+        lineSpacingValue.textContent = parseFloat(lineSpacingSlider.value).toFixed(2);
         updateCameraToggleUI();
     </script>
 </body>
 </html>
-
-
-
