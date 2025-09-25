@@ -69,7 +69,7 @@
 </head>
 <body class="bg-gray-900 text-gray-200 flex flex-col items-center justify-center min-h-screen p-4 transition-colors duration-300">
 
-    <div class="w-full max-w-6xl mx-auto flex flex-col items-center">
+    <div class="w-full max-w-7xl mx-auto flex flex-col items-center">
         <!-- Header Section -->
         <header class="text-center mb-6">
             <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
@@ -112,7 +112,7 @@
                 <!-- Right Side: Settings -->
                 <div class="flex flex-col gap-4">
                     <div class="flex justify-between items-center">
-                         <label for="resolution-slider" class="font-medium text-gray-300">Resolution:</label>
+                         <label for="resolution-slider" class="font-medium text-gray-300">Preview Detail:</label>
                          <span id="resolution-value" class="text-sm font-mono bg-gray-700 px-2 py-1 rounded">125</span>
                     </div>
                     <input type="range" id="resolution-slider" min="50" max="125" value="125" class="w-full">
@@ -138,7 +138,7 @@
         </div>
 
         <!-- ASCII Output Area -->
-        <div id="output-container" class="relative w-full bg-black p-2 rounded-xl shadow-2xl border border-gray-700 overflow-hidden flex items-center justify-center min-h-[50vh] transition-colors">
+        <div id="output-container" class="relative w-full bg-black p-2 rounded-xl shadow-2xl border border-gray-700 overflow-hidden flex items-center justify-center min-h-[65vh] transition-colors">
              <pre id="ascii-output" class="w-full text-center font-mono" style="color: #34D399;">
                 <span id="placeholder" class="text-gray-500 text-lg" style="font-size: 1rem;">open your cam first oke?</span>
             </pre>
@@ -261,60 +261,94 @@
                 exitIcon.classList.add('hidden');
             }
         });
-
+        
+        // --- MODIFIED: HD Image Capture Function ---
         const performCapture = () => {
-             const asciiText = asciiOutput.textContent;
-            const lines = asciiText.split('\n').filter(line => line.trim() !== '');
-            if (lines.length === 0) {
-                messageEl.textContent = "Nothing to capture.";
+            if (!stream || !stream.active || video.videoHeight === 0) {
+                messageEl.textContent = "Camera is not ready for capture.";
                 return;
             }
 
+            messageEl.textContent = "Processing HD capture...";
+
+            // 1. Get HD dimensions from the actual video stream
+            const hdWidth = video.videoWidth;
+            const hdHeight = video.videoHeight;
+
+            // 2. Use a temporary canvas to draw the current video frame in full resolution
+            const tempCanvas = document.createElement('canvas');
+            const tempContext = tempCanvas.getContext('2d');
+            tempCanvas.width = hdWidth;
+            tempCanvas.height = hdHeight;
+            tempContext.drawImage(video, 0, 0, hdWidth, hdHeight);
+
+            // 3. Generate a new, high-detail ASCII string for the capture
+            const captureAsciiWidth = 300; 
+            const aspectRatio = hdHeight / hdWidth;
+            const captureAsciiHeight = Math.floor(captureAsciiWidth * aspectRatio * 0.5);
+
+            // 4. Scale the HD image down to the target ASCII dimensions for processing brightness
+            const processingCanvas = document.createElement('canvas');
+            const processingContext = processingCanvas.getContext('2d');
+            processingCanvas.width = captureAsciiWidth;
+            processingCanvas.height = captureAsciiHeight;
+            processingContext.drawImage(tempCanvas, 0, 0, captureAsciiWidth, captureAsciiHeight);
+            
+            const imageData = processingContext.getImageData(0, 0, captureAsciiWidth, captureAsciiHeight);
+            const data = imageData.data;
+            let asciiText = '';
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i+1], b = data[i+2];
+                const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                const densityIndex = Math.floor(brightness * (density.length - 1));
+                const char = density[density.length - 1 - densityIndex];
+                asciiText += char;
+                if ((i / 4 + 1) % captureAsciiWidth === 0) {
+                    asciiText += '\n';
+                }
+            }
+            
+            const lines = asciiText.split('\n').filter(line => line && line.trim() !== '');
+            if (lines.length === 0) {
+                messageEl.textContent = "Capture failed: could not generate ASCII art.";
+                return;
+            }
+
+            // 5. Render this detailed ASCII string onto the final 'captureCanvas'
             const styles = window.getComputedStyle(asciiOutput);
             const bgColor = window.getComputedStyle(outputContainer).backgroundColor;
-            const fontSize = parseFloat(styles.fontSize);
+            const fontSize = 8;
             const captureContext = captureCanvas.getContext('2d');
             const font = `${fontSize}px ${styles.fontFamily}`;
             
             captureContext.font = font;
-            const charWidth = captureContext.measureText('W').width; 
-            const canvasWidth = charWidth * lines[0].length;
-            const lineHeight = fontSize * 0.85; 
+            const charMetrics = captureContext.measureText('W');
+            const charWidth = charMetrics.width;
+            const lineHeight = fontSize * 0.85;
+
+            const asciiArtWidth = charWidth * lines[0].length;
             const asciiArtHeight = lineHeight * lines.length;
             
-            // --- NEW WATERMARK LOGIC ---
-
-            // 1. Define watermark content
-            const randomMessages = [
-                ":D Art in motion.", ":) Capture the moment.", "X) Create your reality.", "XD Pixels to patterns.",
-                ":O Digital soul.", ":P The world in code.", ":Y Seen through the matrix.", ":3 Another reality captured.",
-                ":> Text-based masterpiece.", ":| A moment in ASCII.", ":) Smile for me!", ":9 Converting photons to text.",
-                ":O Is this real life?", ";D Fragment of time.", ";) Beyond the pixels."
-            ];
+            // Re-integrate watermark logic for the HD capture
+            const randomMessages = [":D Art in motion.", ":) Capture the moment.", "X) Create your reality.", "XD Pixels to patterns.", ":O Digital soul.", ":P The world in code.", ":Y Seen through the matrix.", ":3 Another reality captured.", ":> Text-based masterpiece.", ":| A moment in ASCII.", ":) Smile for me!", ":9 Converting photons to text.", ":O Is this real life?", ";D Fragment of time.", ";) Beyond the pixels."];
             const randomMessage = randomMessages[Math.floor(Math.random() * randomMessages.length)];
             const date = new Date();
             const dateText = date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase().replace(/, /g, '-').replace(/ /g, '-');
-
-            const line1Left = "LIVE ASCII CAMERA";
-            const line1Right = dateText;
-            const line2Left = "By Rexshimura";
-            const line2Right = randomMessage;
-
-            // 2. Define styles
-            const watermarkFontSize = Math.max(8, fontSize * 0.7);
+            const line1Left = "LIVE ASCII CAMERA", line1Right = dateText, line2Left = "By Rexshimura", line2Right = randomMessage;
+            
+            const watermarkFontSize = Math.max(10, fontSize * 1.2); 
             const watermarkPadding = watermarkFontSize * 1.5;
             const watermarkLineHeight = watermarkFontSize * 1.2;
             const watermarkFont = `500 ${watermarkFontSize}px 'Inter', sans-serif`;
-            const paddingFromEdge = 15;
-
-            // 3. Calculate canvas height
+            const paddingFromEdge = 20;
             const watermarkBlockHeight = (watermarkLineHeight * 2) + (watermarkPadding * 2);
             const canvasHeight = asciiArtHeight + watermarkBlockHeight;
+            const canvasWidth = asciiArtWidth;
 
             captureCanvas.width = canvasWidth;
             captureCanvas.height = canvasHeight;
             
-            // 4. Draw background and ASCII
+            // 6. Draw everything to the capture canvas
             captureContext.fillStyle = bgColor;
             captureContext.fillRect(0, 0, canvasWidth, canvasHeight);
             
@@ -323,41 +357,32 @@
             captureContext.textBaseline = 'top';
             
             lines.forEach((line, index) => {
-                let lineToDraw = line;
-                if (currentFacingMode === 'user' && asciiOutput.style.transform === 'scaleX(-1)') {
-                     lineToDraw = line.split('').reverse().join('');
-                }
+                let lineToDraw = (currentFacingMode === 'user') ? line.split('').reverse().join('') : line;
                 captureContext.fillText(lineToDraw, 0, index * lineHeight);
             });
             
-            // 5. Draw the new watermark
             captureContext.font = watermarkFont;
             captureContext.globalAlpha = 0.7;
-            
             const bottomY = canvasHeight - watermarkPadding;
 
-            // Line 2 (bottom)
             captureContext.textBaseline = 'bottom';
             captureContext.textAlign = 'left';
             captureContext.fillText(line2Left, paddingFromEdge, bottomY);
+            captureContext.fillText(line1Left, paddingFromEdge, bottomY - watermarkLineHeight);
+            
             captureContext.textAlign = 'right';
             captureContext.fillText(line2Right, canvasWidth - paddingFromEdge, bottomY);
-            
-            // Line 1 (above line 2)
-            captureContext.textBaseline = 'bottom';
-            captureContext.textAlign = 'left';
-            captureContext.fillText(line1Left, paddingFromEdge, bottomY - watermarkLineHeight);
-            captureContext.textAlign = 'right';
             captureContext.fillText(line1Right, canvasWidth - paddingFromEdge, bottomY - watermarkLineHeight);
 
             captureContext.globalAlpha = 1.0;
 
+            // 7. Trigger download
             const link = document.createElement('a');
-            link.download = `ascii-capture-${new Date().toISOString()}.png`;
+            link.download = `ascii-capture-HD-${new Date().toISOString().slice(0,19).replace('T','-').replace(/:/g,'-')}.png`;
             link.href = captureCanvas.toDataURL('image/png');
             link.click();
             
-            messageEl.textContent = "Image captured!";
+            messageEl.textContent = "HD Image captured!";
             setTimeout(() => { if(stream && stream.active) messageEl.textContent = "Camera is active!"; }, 3000);
         };
 
@@ -375,7 +400,7 @@
                 let countdown = timerDuration;
                 countdownOverlay.textContent = countdown;
                 countdownOverlay.classList.remove('hidden');
-                captureButton.classList.add('hidden'); // Hide button during countdown
+                captureButton.classList.add('hidden'); 
 
                 const interval = setInterval(() => {
                     countdown--;
@@ -385,25 +410,29 @@
                         clearInterval(interval);
                         countdownOverlay.classList.add('hidden');
                         performCapture();
-                        captureButton.classList.remove('hidden'); // Show button again
+                        captureButton.classList.remove('hidden'); 
                     }
                 }, 1000);
             }
         });
 
-
+        // --- MODIFIED: Camera Setup Function ---
         const setupCamera = async () => {
             try {
                 messageEl.textContent = "Requesting camera access...";
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: currentFacingMode },
-                    audio: false 
-                });
+                const constraints = {
+                    audio: false,
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        facingMode: currentFacingMode
+                    }
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
                 video.srcObject = stream;
                 video.play();
                 
-                // Flip the video preview if using the front camera
                 asciiOutput.style.transform = (currentFacingMode === 'user') ? 'scaleX(-1)' : 'scaleX(1)';
 
                 messageEl.textContent = "Camera is active!";
@@ -413,9 +442,16 @@
                 captureButton.classList.remove('hidden');
             } catch (err) {
                 console.error("Error accessing camera: ", err);
-                messageEl.textContent = `Could not access the ${currentFacingMode} camera. It may not be available.`;
+                messageEl.textContent = `Could not access the ${currentFacingMode} camera with HD. It may not be available or resolution is not supported.`;
                 if (currentFacingMode === 'environment') {
-                    switchCamera('user'); // Fallback to front camera
+                    messageEl.textContent += " Trying front camera.";
+                    switchCamera('user');
+                } else {
+                     stream = null;
+                     startButton.textContent = 'Start Camera';
+                     startButton.classList.remove('bg-red-600', 'hover:bg-red-700');
+                     startButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                     captureButton.classList.add('hidden');
                 }
             }
         };
@@ -426,22 +462,19 @@
 
         const drawAsciiFrame = () => {
             if (video.paused || video.ended || !stream || !stream.active) return;
-            // Ensure video metadata is loaded
             if (video.videoHeight === 0) {
                 requestAnimationFrame(drawAsciiFrame);
                 return;
             }
             const asciiWidth = parseInt(resolutionSlider.value); 
             
-            // --- DYNAMIC FONT SIZE CALCULATION ---
             if (outputContainer.clientWidth > 0 && asciiWidth > 0) {
-                // Adjust font size based on container width and character count to maintain scale
-                const newFontSize = (outputContainer.clientWidth / asciiWidth) * 0.95; // 0.95 factor to prevent line wrapping
+                const newFontSize = (outputContainer.clientWidth / asciiWidth) * 1.3;
                 asciiOutput.style.fontSize = `${newFontSize}px`;
             }
 
             const aspectRatio = video.videoHeight / video.videoWidth;
-            const asciiHeight = Math.floor(asciiWidth * aspectRatio * 0.5); // 0.5 factor for character aspect ratio
+            const asciiHeight = Math.floor(asciiWidth * aspectRatio * 0.5);
 
             canvas.width = asciiWidth;
             canvas.height = asciiHeight;
@@ -469,10 +502,10 @@
             requestAnimationFrame(drawAsciiFrame);
         };
         
-        // Initial call on page load
         updateCameraToggleUI();
-
     </script>
 </body>
 </html>
+
+
 
